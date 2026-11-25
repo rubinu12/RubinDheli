@@ -1,69 +1,147 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect, useRef } from "react";
+import Preloader from "@/components/Preloader";
+import Page0Cover from "@/pages-sections/Page0Cover";
+import Page1Hero from "@/pages-sections/Page1Hero";
+import Page2Countdown from "@/pages-sections/Page2Countdown";
+import Page3Story from "@/pages-sections/Page3Story";
+import Page4Letter from "@/pages-sections/Page4Letter";
+import Page5Moments from "@/pages-sections/Page5Moments";
+import Page6Itinerary from "@/pages-sections/Page6Itinerary";
+import Page7Venues from "@/pages-sections/Page7Venues";
+import Page8Closing from "@/pages-sections/Page8Closing";
+
+export default function HomePage() {
+  const [isOpening, setIsOpening] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [isDone, setIsDone] = useState(false);
+
+  // Music state
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+
+  const fadeInMusic = (targetVol = 0.32, durationMs = 2000) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+    audio.volume = 0.02;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsMusicPlaying(true);
+          const steps = 20;
+          const inc = targetVol / steps;
+          fadeTimerRef.current = setInterval(() => {
+            if (!audioRef.current) return;
+            if (audioRef.current.volume + inc < targetVol) {
+              audioRef.current.volume = Math.min(
+                targetVol,
+                audioRef.current.volume + inc
+              );
+            } else {
+              audioRef.current.volume = targetVol;
+              if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+            }
+          }, durationMs / steps);
+        })
+        .catch(() => {
+          setIsMusicPlaying(false);
+        });
+    }
+  };
+
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isMusicPlaying) {
+      if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+      audio.pause();
+      setIsMusicPlaying(false);
+    } else {
+      fadeInMusic(0.32, 700);
+    }
+  };
+
+  const handleOpenEnvelope = () => {
+    if (isOpening) return;
+    setIsOpening(true);
+
+    // Start music immediately on seal tap
+    fadeInMusic(0.32, 2200);
+
+    setTimeout(() => {
+      setIsRevealed(true);
+      document.body.classList.add("unlocked");
+    }, 1050);
+
+    setTimeout(() => {
+      setIsDone(true);
+    }, 3250);
+  };
+
+  const handleReplayEnvelope = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.body.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      document.body.classList.remove("unlocked");
+      setIsDone(false);
+      setIsRevealed(false);
+      setIsOpening(false);
+    }, 450);
+  };
+
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove("unlocked");
+      if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="phone-shell">
+      <Preloader />
+
+      {/* Background Romantic Music */}
+      <audio ref={audioRef} loop preload="auto">
+        <source
+          src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-piano-112191.mp3"
+          type="audio/mpeg"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </audio>
+
+      {/* Top-Right Floating Music Toggle */}
+      <div className={`floating-music-wrap ${isRevealed ? "is-visible" : ""}`}>
+        <button
+          type="button"
+          className={`floating-music-btn ${isMusicPlaying ? "is-playing" : ""}`}
+          onClick={toggleMusic}
+          aria-label={isMusicPlaying ? "Mute wedding music" : "Play wedding music"}
+        >
+          <span className="music-pulse-dot" aria-hidden="true" />
+          <span>{isMusicPlaying ? "♪ ON" : "♪ OFF"}</span>
+        </button>
+      </div>
+
+      {/* All 9 Pages */}
+      <Page0Cover
+        isOpening={isOpening}
+        isDone={isDone}
+        onOpen={handleOpenEnvelope}
+      />
+      <Page1Hero isRevealed={isRevealed} />
+      <Page2Countdown />
+      <Page3Story />
+      <Page4Letter />
+      <Page5Moments />
+      <Page6Itinerary />
+      <Page7Venues />
+      <Page8Closing onReplayEnvelope={handleReplayEnvelope} />
+    </main>
   );
 }
